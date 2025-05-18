@@ -20,6 +20,7 @@ import java.util.Optional;
 @Service
 @Transactional
 @RequiredArgsConstructor
+@org.springframework.context.annotation.Primary
 public class UserServiceImpl implements UserService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
@@ -29,7 +30,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User createUser(User user) {
         logger.info("Registering new user: {}", user.getEmail());
-        
+
         // Validate required fields
         if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
             throw new UserRegistrationException("Username is required");
@@ -43,7 +44,7 @@ public class UserServiceImpl implements UserService {
         if (user.getMobileNumber() == null || user.getMobileNumber().trim().isEmpty()) {
             throw new UserRegistrationException("Mobile number is required");
         }
-        
+
         // Check for existing user
         if (existsByUsername(user.getUsername())) {
             logger.warn("Registration failed: Username already exists - {}", user.getUsername());
@@ -61,13 +62,13 @@ public class UserServiceImpl implements UserService {
         try {
             String encodedPassword = passwordEncoder.encode(user.getPassword());
             logger.debug("Password encoded successfully");
-            
+
             user.setPassword(encodedPassword);
             user.setRole(user.getRole() == null ? UserRole.CUSTOMER : user.getRole());
-            
+
             User savedUser = userRepository.save(user);
             logger.info("User registered successfully: {}", savedUser.getEmail());
-            
+
             return savedUser;
         } catch (Exception e) {
             logger.error("Error during user registration: {}", e.getMessage());
@@ -88,7 +89,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User updateUser(User user) {
         logger.info("Updating user with ID: {}", user.getId());
-        
+
         User existingUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -97,7 +98,7 @@ public class UserServiceImpl implements UserService {
         existingUser.setMobileNumber(user.getMobileNumber());
         existingUser.setPincode(user.getPincode());
         existingUser.setRole(user.getRole());
-        
+
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
             String encodedPassword = passwordEncoder.encode(user.getPassword());
             existingUser.setPassword(encodedPassword);
@@ -148,4 +149,23 @@ public class UserServiceImpl implements UserService {
         logger.debug("Fetching user by email: {}", email);
         return userRepository.findByEmail(email);
     }
-} 
+
+    @Override
+    public long countUsers() {
+        logger.info("Counting all users");
+        return userRepository.count();
+    }
+
+    @Override
+    public long countUsersByRole(UserRole role) {
+        logger.info("Counting users by role: {}", role);
+        return userRepository.countByRole(role);
+    }
+
+    @Override
+    public org.springframework.security.core.userdetails.UserDetails loadUserByUsername(String username) {
+        logger.debug("Loading user by username: {}", username);
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new org.springframework.security.core.userdetails.UsernameNotFoundException("User not found with username: " + username));
+    }
+}

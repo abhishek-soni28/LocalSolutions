@@ -16,7 +16,7 @@ export const checkBackendHealth = async () => {
   if (now - lastHealthCheck < HEALTH_CHECK_INTERVAL) {
     return true; // Return cached result if within interval
   }
-  
+
   try {
     const response = await api.get('/api/actuator/health', {
       headers: {
@@ -80,18 +80,18 @@ export const posts = {
   create: (postData) => api.post('/api/posts', postData),
   update: (id, postData) => api.put(`/api/posts/${id}`, postData),
   delete: (id) => api.delete(`/api/posts/${id}`),
-  like: (id) => api.post(`/api/posts/${id}/like`),
-  unlike: (id) => api.delete(`/api/posts/${id}/like`),
+  like: (id) => api.post(`/api/posts/${id}/likes`),
+  unlike: (id) => api.delete(`/api/posts/${id}/likes`),
   getUserPosts: (username, params) => api.get(`/api/posts/user/${username}`, { params }),
-  getByTypeAndStatus: (type, status, pageable) => 
+  getByTypeAndStatus: (type, status, pageable) =>
     api.get(`/api/posts/type/${type}/status/${status}`, { params: pageable }),
-  getByCategoryAndPincode: (category, pincode, pageable) => 
+  getByCategoryAndPincode: (category, pincode, pageable) =>
     api.get(`/api/posts/category/${category}/pincode/${pincode}`, { params: pageable }),
-  getByStatusAndPincode: (status, pincode) => 
+  getByStatusAndPincode: (status, pincode) =>
     api.get(`/api/posts/status/${status}/pincode/${pincode}`),
-  getRelevant: (type, status, userId, pageable) => 
+  getRelevant: (type, status, userId, pageable) =>
     api.get('/api/posts/relevant', { params: { type, status, userId, ...pageable } }),
-  getLocalCategory: (category, pincode, type, status, pageable) => 
+  getLocalCategory: (category, pincode, type, status, pageable) =>
     api.get(`/api/posts/local/${category}/${pincode}`, { params: { type, status, ...pageable } }),
   updateStatus: (id, status) => api.put(`/api/posts/${id}/status`, null, { params: { status } }),
   isLiked: (id, userId) => api.get(`/api/posts/${id}/liked`, { params: { userId } }),
@@ -103,7 +103,7 @@ export const comments = {
   create: (postId, commentData) => api.post(`/api/posts/${postId}/comments`, commentData),
   update: (postId, commentId, commentData) => api.put(`/api/posts/${postId}/comments/${commentId}`, commentData),
   delete: (postId, commentId) => api.delete(`/api/posts/${postId}/comments/${commentId}`),
-  getByUserId: (userId, pageable) => 
+  getByUserId: (userId, pageable) =>
     api.get(`/api/comments/user/${userId}`, { params: pageable }),
 };
 
@@ -133,14 +133,22 @@ export const upload = {
   uploadImage: (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    return api.post('/api/upload/image', formData, {
+    return api.post('/api/uploads/post-image', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
   },
-  deletePostImage: (fileName) => api.delete(`/api/upload/post-image/${fileName}`),
-  deleteImage: (imageUrl) => api.delete('/api/upload/image', { data: { url: imageUrl } }),
+  uploadProfileImage: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/api/uploads/profile-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  deleteFile: (fileName) => api.delete(`/api/uploads/${fileName}`),
 };
 
 // Search API

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useApi } from '../hooks/useApi';
 import api from '../api/axios';
+import { uploadImage } from '../services/fileUploadService';
 import * as Yup from 'yup';
 import {
   Container,
@@ -100,20 +101,11 @@ const CreatePost = () => {
       let imageUrl = null;
       if (imageFile) {
         try {
-          // Create a FormData object to upload the image
-          const formData = new FormData();
-          formData.append('file', imageFile);
-
-          // Upload the image
-          const response = await api.post('/files/upload', formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
-          });
-
-          imageUrl = response.data.url;
+          // Upload the image using our service
+          const result = await uploadImage(imageFile);
+          imageUrl = result.fileUrl;
         } catch (error) {
-          setUploadError('Failed to upload image. Please try again.');
+          setUploadError(error.message || 'Failed to upload image. Please try again.');
           setSubmitting(false);
           setLoading(false);
           return;
@@ -131,7 +123,7 @@ const CreatePost = () => {
       };
 
       // Create post
-      const response = await api.post('/posts', postData);
+      const response = await api.post('/api/posts', postData);
       navigate('/');
     } catch (error) {
       console.error('Error creating post:', error);

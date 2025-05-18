@@ -32,8 +32,8 @@ export const useApi = (url, options = {}) => {
       const response = await api({
         url: currentUrl,
         method: currentOptions.method || 'GET',
-        params: currentOptions.params,
-        data: currentOptions.data || params,
+        params: params || currentOptions.params,
+        data: currentOptions.data,
         ...currentOptions
       });
 

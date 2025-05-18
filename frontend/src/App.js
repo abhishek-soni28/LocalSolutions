@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './components/layout/MainLayout';
 import Loading from './components/Loading';
 import { AuthProvider } from './context/AuthContext';
+import AuthInitializer from './components/auth/AuthInitializer';
 
 // Lazy load components
 const Home = lazy(() => import('./pages/Home'));
@@ -32,6 +33,7 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <ErrorBoundary>
+          <AuthInitializer />
           <Router>
             <Suspense fallback={<Loading />}>
               <Routes>

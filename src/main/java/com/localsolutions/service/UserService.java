@@ -4,10 +4,11 @@ import com.localsolutions.model.User;
 import com.localsolutions.model.UserRole;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import java.util.List;
 import java.util.Optional;
 
-public interface UserService {
+public interface UserService extends UserDetailsService {
     User createUser(User user);
     Optional<User> getUserByEmail(String email);
     Optional<User> getUserById(Long id);
@@ -20,4 +21,8 @@ public interface UserService {
     boolean existsByUsername(String username);
     boolean existsByMobileNumber(String mobileNumber);
     Page<User> getAllUsers(Pageable pageable);
-} 
+
+    // Admin dashboard methods
+    long countUsers();
+    long countUsersByRole(UserRole role);
+}

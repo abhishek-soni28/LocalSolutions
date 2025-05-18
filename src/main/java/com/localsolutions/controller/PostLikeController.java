@@ -1,5 +1,7 @@
 package com.localsolutions.controller;
 
+import com.localsolutions.dto.PostDTO;
+import com.localsolutions.dto.UserDTO;
 import com.localsolutions.model.Post;
 import com.localsolutions.model.User;
 import com.localsolutions.service.PostService;
@@ -15,9 +17,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/posts/{postId}/like")
+@RequestMapping("/api/posts/{postId}/likes")
 @CrossOrigin(origins = "${spring.web.cors.allowed-origins}")
 public class PostLikeController {
 
@@ -64,8 +67,13 @@ public class PostLikeController {
             // Add like
             postService.likePost(postId, user.getId());
 
+            // Get the updated post
+            Post updatedPost = postService.getPostById(postId);
+            PostDTO postDTO = convertToDTO(updatedPost);
+            postDTO.setLiked(true);
+
             logger.info("User {} liked post {}", username, postId);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok(postDTO);
         } catch (Exception e) {
             logger.error("Error adding like to post ID: {}", postId, e);
             return ResponseEntity.status(500).body("Error adding like: " + e.getMessage());
@@ -107,11 +115,51 @@ public class PostLikeController {
             // Remove like
             postService.unlikePost(postId, user.getId());
 
+            // Get the updated post
+            Post updatedPost = postService.getPostById(postId);
+            PostDTO postDTO = convertToDTO(updatedPost);
+            postDTO.setLiked(false);
+
             logger.info("User {} unliked post {}", username, postId);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok(postDTO);
         } catch (Exception e) {
             logger.error("Error removing like from post ID: {}", postId, e);
             return ResponseEntity.status(500).body("Error removing like: " + e.getMessage());
         }
+    }
+
+    private PostDTO convertToDTO(Post post) {
+        PostDTO dto = new PostDTO();
+        dto.setId(post.getId());
+        dto.setContent(post.getContent());
+        dto.setImageUrl(post.getImageUrl());
+        dto.setType(post.getType());
+        dto.setStatus(post.getStatus());
+        dto.setCategory(post.getCategory());
+        dto.setPincode(post.getPincode());
+        dto.setCreatedAt(post.getCreatedAt());
+        dto.setUpdatedAt(post.getUpdatedAt());
+        dto.setSolutionProvidedAt(post.getSolutionProvidedAt());
+
+        if (post.getUser() != null) {
+            dto.setAuthorName(post.getUser().getFullName());
+            dto.setAuthorId(post.getUser().getId());
+        }
+
+        // Handle likes
+        if (post.getLikedBy() != null) {
+            Set<UserDTO> likedByDTOs = post.getLikedBy().stream()
+                .map(UserDTO::fromUser)
+                .collect(Collectors.toSet());
+            dto.setLikedBy(likedByDTOs);
+            dto.setLikeCount(likedByDTOs.size());
+        }
+
+        // Handle comments
+        if (post.getComments() != null) {
+            dto.setCommentCount(post.getComments().size());
+        }
+
+        return dto;
     }
 }

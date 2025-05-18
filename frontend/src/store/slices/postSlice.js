@@ -65,9 +65,13 @@ export const likePost = createAsyncThunk(
   'post/likePost',
   async (id, { rejectWithValue }) => {
     try {
-      const response = await api.post(`/api/posts/${id}/like`);
+      console.log('likePost: Liking post with ID:', id);
+      // The api instance already has the /api prefix
+      const response = await api.post(`/posts/${id}/likes`);
+      console.log('likePost: Response:', response.data);
       return response.data;
     } catch (error) {
+      console.error('likePost: Error:', error);
       return rejectWithValue(error.response?.data?.message || 'Failed to like post');
     }
   }
@@ -77,9 +81,13 @@ export const unlikePost = createAsyncThunk(
   'post/unlikePost',
   async (id, { rejectWithValue }) => {
     try {
-      const response = await api.delete(`/api/posts/${id}/like`);
+      console.log('unlikePost: Unliking post with ID:', id);
+      // The api instance already has the /api prefix
+      const response = await api.delete(`/posts/${id}/likes`);
+      console.log('unlikePost: Response:', response.data);
       return response.data;
     } catch (error) {
+      console.error('unlikePost: Error:', error);
       return rejectWithValue(error.response?.data?.message || 'Failed to unlike post');
     }
   }
@@ -200,20 +208,24 @@ const postSlice = createSlice({
       .addCase(likePost.fulfilled, (state, action) => {
         const post = state.posts.find((p) => p.id === action.payload.id);
         if (post) {
-          post.likes = action.payload.likes;
+          post.likeCount = action.payload.likeCount;
+          post.liked = true;
         }
         if (state.currentPost?.id === action.payload.id) {
-          state.currentPost.likes = action.payload.likes;
+          state.currentPost.likeCount = action.payload.likeCount;
+          state.currentPost.liked = true;
         }
       })
       // Unlike Post
       .addCase(unlikePost.fulfilled, (state, action) => {
         const post = state.posts.find((p) => p.id === action.payload.id);
         if (post) {
-          post.likes = action.payload.likes;
+          post.likeCount = action.payload.likeCount;
+          post.liked = false;
         }
         if (state.currentPost?.id === action.payload.id) {
-          state.currentPost.likes = action.payload.likes;
+          state.currentPost.likeCount = action.payload.likeCount;
+          state.currentPost.liked = false;
         }
       })
       // Fetch User Posts
@@ -235,4 +247,4 @@ const postSlice = createSlice({
 });
 
 export const { clearError, clearCurrentPost } = postSlice.actions;
-export default postSlice.reducer; 
+export default postSlice.reducer;

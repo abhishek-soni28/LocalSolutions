@@ -24,4 +24,6 @@ public class PostDTO {
     private Long authorId;
     private Set<UserDTO> likedBy;
     private int likeCount;
+    private int commentCount;
+    private boolean liked;
 }

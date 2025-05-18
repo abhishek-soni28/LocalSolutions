@@ -83,14 +83,14 @@ const PostDetails = () => {
 
     try {
       if (liked) {
-        await api.delete(`/posts/${id}/like`);
+        await api.delete(`/posts/${id}/likes`);
         setLiked(false);
         setPost(prev => ({
           ...prev,
           likedBy: prev.likedBy.filter(likedUser => likedUser.id !== user.id)
         }));
       } else {
-        await api.post(`/posts/${id}/like`);
+        await api.post(`/posts/${id}/likes`);
         setLiked(true);
         setPost(prev => ({
           ...prev,

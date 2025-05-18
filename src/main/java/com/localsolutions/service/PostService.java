@@ -28,4 +28,24 @@ public interface PostService {
     Page<Post> searchPosts(String searchTerm, Pageable pageable);
     Page<Post> getPopularPosts(Pageable pageable);
     Page<Post> getRecentPosts(Pageable pageable);
+    Page<Post> getPostsByCategory(PostCategory category, Pageable pageable);
+    Page<Post> getPostsByCategories(List<PostCategory> categories, Pageable pageable);
+    Page<Post> getPostsByStatus(PostStatus status, Pageable pageable);
+    Page<Post> getPostsByCategoryAndStatus(PostCategory category, PostStatus status, Pageable pageable);
+    Page<Post> getPostsByCategoriesAndStatus(List<PostCategory> categories, PostStatus status, Pageable pageable);
+
+    // Location-based search methods
+    Page<Post> getPostsByPincode(String pincode, Pageable pageable);
+    Page<Post> getPostsByPincodeAndCategory(String pincode, PostCategory category, Pageable pageable);
+    Page<Post> getPostsByPincodeAndType(String pincode, PostType type, Pageable pageable);
+    Page<Post> getPostsByPincodeTypeAndStatus(String pincode, PostType type, PostStatus status, Pageable pageable);
+    Page<Post> getPostsByPincodeTypeStatusAndCategory(String pincode, PostType type, PostStatus status, PostCategory category, Pageable pageable);
+    Page<Post> getPostsByNearbyPincode(String pincode, Pageable pageable);
+    Page<Post> getPostsByNearbyPincodeAndCategory(String pincode, PostCategory category, Pageable pageable);
+    Page<Post> getPopularPostsByPincode(String pincode, Pageable pageable);
+    Page<Post> searchPostsByContentAndPincode(String query, String pincode, Pageable pageable);
+
+    // Admin dashboard methods
+    long countPosts();
+    long countPostsByStatus(PostStatus status);
 }

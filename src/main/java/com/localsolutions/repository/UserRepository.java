@@ -20,4 +20,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByBusinessCategoryAndPincode(String category, String pincode);
     boolean existsByUsername(String username);
     boolean existsByMobileNumber(String mobileNumber);
-} 
+    long countByRole(UserRole role);
+}

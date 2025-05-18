@@ -29,13 +29,13 @@ import {
   ArrowBack as ArrowBackIcon,
   Send as SendIcon,
 } from '@mui/icons-material';
-import { useAuth } from '../context/AuthContext';
+import { useSelector } from 'react-redux';
 import api from '../api/axios';
 
 const PostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useSelector((state) => state.auth);
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
@@ -114,14 +114,14 @@ const PostDetail = () => {
 
     try {
       if (liked) {
-        await api.delete(`/posts/${id}/like`);
+        await api.delete(`/posts/${id}/likes`);
         setLiked(false);
         setPost(prev => ({
           ...prev,
           likedBy: prev.likedBy.filter(likedUser => likedUser.id !== user.id)
         }));
       } else {
-        await api.post(`/posts/${id}/like`);
+        await api.post(`/posts/${id}/likes`);
         setLiked(true);
         setPost(prev => ({
           ...prev,

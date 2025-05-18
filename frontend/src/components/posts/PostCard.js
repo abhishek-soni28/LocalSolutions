@@ -13,6 +13,13 @@ import {
   Chip,
   Menu,
   MenuItem,
+  Tooltip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Button,
 } from '@mui/material';
 import {
   MoreVert as MoreVertIcon,
@@ -31,6 +38,7 @@ const PostCard = ({ post }) => {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth) || { user: null };
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
 
   if (!post) {
     return null;
@@ -49,9 +57,18 @@ const PostCard = ({ post }) => {
     handleMenuClose();
   };
 
-  const handleDelete = () => {
-    dispatch(deletePost(post.id));
+  const handleDeleteClick = () => {
     handleMenuClose();
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    dispatch(deletePost(post.id));
+    setDeleteDialogOpen(false);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
   };
 
   const handleLike = () => {
@@ -66,12 +83,14 @@ const PostCard = ({ post }) => {
     }
   };
 
-  const isOwner = user?.id === post.user?.id;
+  // Check if the current user is the owner of the post or an admin
+  const isOwner = user?.id === post.authorId || user?.role === 'ADMIN';
+  const isAdmin = user?.role === 'ADMIN';
 
   return (
-    <Card 
-      sx={{ 
-        maxWidth: '100%', 
+    <Card
+      sx={{
+        maxWidth: '100%',
         mb: 2,
         borderRadius: 2,
         boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
@@ -114,7 +133,7 @@ const PostCard = ({ post }) => {
             <Typography
               variant="subtitle1"
               component="div"
-              sx={{ 
+              sx={{
                 cursor: 'pointer',
                 fontWeight: 'bold',
                 '&:hover': {
@@ -167,8 +186,8 @@ const PostCard = ({ post }) => {
         <Typography
           variant="h6"
           component="div"
-          sx={{ 
-            cursor: 'pointer', 
+          sx={{
+            cursor: 'pointer',
             mb: 1,
             fontWeight: 'bold',
             '&:hover': {
@@ -211,8 +230,8 @@ const PostCard = ({ post }) => {
         </Box>
       </CardContent>
       <CardActions sx={{ px: 2, py: 1, borderTop: '1px solid rgba(0,0,0,0.08)' }}>
-        <IconButton 
-          aria-label="like" 
+        <IconButton
+          aria-label="like"
           onClick={handleLike}
           sx={{
             color: post.liked ? 'error.main' : 'action.active',
@@ -225,7 +244,7 @@ const PostCard = ({ post }) => {
           {post.liked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
         </IconButton>
         <Typography variant="body2" color="text.secondary" sx={{ mr: 2 }}>
-          {post.likes || 0}
+          {post.likedBy?.length || post.likeCount || 0}
         </Typography>
         <IconButton
           aria-label="comment"
@@ -240,9 +259,9 @@ const PostCard = ({ post }) => {
           <CommentIcon />
         </IconButton>
         <Typography variant="body2" color="text.secondary" sx={{ mr: 2 }}>
-          {post.comments || 0}
+          {post.comments?.length || post.commentCount || 0}
         </Typography>
-        <IconButton 
+        <IconButton
           aria-label="share"
           sx={{
             transition: 'transform 0.2s ease-in-out',
@@ -268,12 +287,43 @@ const PostCard = ({ post }) => {
         <MenuItem onClick={handleEdit}>
           <EditIcon sx={{ mr: 1 }} /> Edit
         </MenuItem>
-        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
+        <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
           <DeleteIcon sx={{ mr: 1 }} /> Delete
         </MenuItem>
       </Menu>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+          }
+        }}
+      >
+        <DialogTitle id="delete-dialog-title">
+          Confirm Deletion
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete this post? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 };
 
-export default PostCard; 
+export default PostCard;
