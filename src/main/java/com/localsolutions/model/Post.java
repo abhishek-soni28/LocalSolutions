@@ -3,8 +3,10 @@ package com.localsolutions.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.ToString;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -12,6 +14,8 @@ import java.util.Set;
 @Entity
 @Table(name = "posts")
 @Data
+@EqualsAndHashCode(exclude = {"user", "comments", "likedBy"})
+@ToString(exclude = {"user", "comments", "likedBy"})
 @NoArgsConstructor
 @AllArgsConstructor
 public class Post {
@@ -49,13 +53,12 @@ public class Post {
     @JsonIgnore
     private Set<Comment> comments = new HashSet<>();
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "post_likes",
         joinColumns = @JoinColumn(name = "post_id"),
         inverseJoinColumns = @JoinColumn(name = "user_id")
     )
-    @JsonIgnore
     private Set<User> likedBy = new HashSet<>();
 
     @Column(name = "created_at")
@@ -77,4 +80,4 @@ public class Post {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-} 
+}

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -13,10 +12,14 @@ import {
   FormControlLabel,
   Switch,
   Grid,
+  InputAdornment,
+  IconButton,
 } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
-import { register } from '../store/slices/authSlice';
+import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 
 const validationSchema = Yup.object({
   username: Yup.string()
@@ -56,9 +59,19 @@ const validationSchema = Yup.object({
 });
 
 const Register = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error } = useSelector((state) => state.auth);
+  const { login } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleClickShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const handleMouseDownPassword = (event) => {
+    event.preventDefault();
+  };
 
   const handleSubmit = async (values) => {
     try {
@@ -171,10 +184,24 @@ const Register = () => {
                     fullWidth
                     name="password"
                     label="Password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={values.password}
                     onChange={handleChange}
                     onBlur={handleBlur}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label="toggle password visibility"
+                            onClick={handleClickShowPassword}
+                            onMouseDown={handleMouseDownPassword}
+                            edge="end"
+                          >
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
                     error={touched.password && Boolean(errors.password)}
                     helperText={touched.password && errors.password}
                   />
@@ -185,12 +212,26 @@ const Register = () => {
                     fullWidth
                     name="confirmPassword"
                     label="Confirm Password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={values.confirmPassword}
                     onChange={handleChange}
                     onBlur={handleBlur}
                     error={touched.confirmPassword && Boolean(errors.confirmPassword)}
                     helperText={touched.confirmPassword && errors.confirmPassword}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label="toggle password visibility"
+                            onClick={handleClickShowPassword}
+                            onMouseDown={handleMouseDownPassword}
+                            edge="end"
+                          >
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
                   />
                 </Grid>
 
@@ -278,4 +319,4 @@ const Register = () => {
   );
 };
 
-export default Register; 
+export default Register;

@@ -5,10 +5,9 @@ import store from './store/store';
 import App from './App';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+// Disabled StrictMode to prevent double mounting in development
 root.render(
-  <React.StrictMode>
-    <Provider store={store}>
-      <App />
-    </Provider>
-  </React.StrictMode>
-); 
+  <Provider store={store}>
+    <App />
+  </Provider>
+);

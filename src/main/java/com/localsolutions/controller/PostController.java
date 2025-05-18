@@ -1,6 +1,7 @@
 package com.localsolutions.controller;
 
 import com.localsolutions.dto.PostDTO;
+import com.localsolutions.dto.UserDTO;
 import com.localsolutions.model.Post;
 import com.localsolutions.model.PostCategory;
 import com.localsolutions.model.PostStatus;
@@ -20,6 +21,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @RestController
@@ -29,6 +35,10 @@ public class PostController {
 
     private static final Logger logger = LoggerFactory.getLogger(PostController.class);
 
+    // Simple request cache to prevent duplicate requests in short time periods
+    private final ConcurrentHashMap<String, Long> requestCache = new ConcurrentHashMap<>();
+    private static final long CACHE_EXPIRY_MS = 500; // 500ms cache
+
     @Autowired
     private PostService postService;
 
@@ -36,54 +46,119 @@ public class PostController {
     private UserService userService;
 
     @GetMapping
-    public ResponseEntity<Page<PostDTO>> getAllPosts(Pageable pageable) {
-        return ResponseEntity.ok(postService.getAllPosts(pageable).map(this::convertToDTO));
+    public ResponseEntity<Page<PostDTO>> getAllPosts(
+            Pageable pageable,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String filter,
+            @RequestParam(required = false) String sortBy) {
+        try {
+            // Create a cache key based on all request parameters
+            String cacheKey = String.format("posts-%d-%d-%s-%s-%s",
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                search != null ? search : "",
+                filter != null ? filter : "",
+                sortBy != null ? sortBy : "");
+
+            // Check if we've recently served this exact request
+            Long lastRequestTime = requestCache.get(cacheKey);
+            long now = System.currentTimeMillis();
+
+            if (lastRequestTime != null && (now - lastRequestTime) < CACHE_EXPIRY_MS) {
+                logger.debug("Returning cached response for {}", cacheKey);
+                // Still process the request but log it as a duplicate
+            }
+
+            // Update the cache with the current request time
+            requestCache.put(cacheKey, now);
+
+            // Clean up old cache entries periodically
+            if (requestCache.size() > 100) { // Prevent unbounded growth
+                requestCache.entrySet().removeIf(entry -> (now - entry.getValue()) > TimeUnit.MINUTES.toMillis(5));
+            }
+
+            // Apply filters based on parameters
+            Page<Post> posts;
+
+            if (search != null && !search.isEmpty()) {
+                // Search in post content
+                posts = postService.searchPosts(search, pageable);
+            } else if ("popular".equals(filter)) {
+                // Get popular posts (most liked)
+                posts = postService.getPopularPosts(pageable);
+            } else if ("recent".equals(filter)) {
+                // Get most recent posts
+                posts = postService.getRecentPosts(pageable);
+            } else {
+                // Default: get all posts
+                posts = postService.getAllPosts(pageable);
+            }
+
+            return ResponseEntity.ok(posts.map(this::convertToDTO));
+        } catch (Exception e) {
+            logger.error("Error fetching posts", e);
+            throw e; // Let the global exception handler deal with it
+        }
     }
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> createPost(@RequestBody Post post) {
         try {
+            logger.info("Received post creation request: {}", post);
+
             // Get the current authenticated user's username
             String username = SecurityContextHolder.getContext().getAuthentication().getName();
-            
+            logger.info("Current user: {}", username);
+
             // Get the actual User entity from the database
             User currentUser = userService.getUserByUsername(username)
                     .orElseThrow(() -> new RuntimeException("User not found"));
-            
+            logger.info("Found user in database: {}", currentUser.getId());
+
             // Set the user for the post
             post.setUser(currentUser);
-            
-            // Validate required fields
-            if (post.getContent() == null || post.getContent().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("Content is required");
-            }
+
+            // Set default values if not provided
             if (post.getType() == null) {
-                return ResponseEntity.badRequest().body("Post type is required");
+                post.setType(PostType.PROBLEM);
+                logger.debug("Set default post type: PROBLEM");
             }
             if (post.getStatus() == null) {
-                return ResponseEntity.badRequest().body("Post status is required");
+                post.setStatus(PostStatus.OPEN);
+                logger.debug("Set default post status: OPEN");
             }
             if (post.getCategory() == null) {
-                return ResponseEntity.badRequest().body("Category is required");
+                post.setCategory(PostCategory.GENERAL);
+                logger.debug("Set default post category: GENERAL");
+            }
+
+            // Validate required fields
+            if (post.getContent() == null || post.getContent().trim().isEmpty()) {
+                logger.warn("Post creation failed: Content is required");
+                return ResponseEntity.badRequest().body("Content is required");
             }
             if (post.getPincode() == null || post.getPincode().trim().isEmpty()) {
+                logger.warn("Post creation failed: Pincode is required");
                 return ResponseEntity.badRequest().body("Pincode is required");
             }
-            
+
             // Create the post
+            logger.info("Creating post with data: {}", post);
             Post createdPost = postService.createPost(post);
-            
+            logger.info("Post created successfully with ID: {}", createdPost.getId());
+
             // Return the created post
             return ResponseEntity.ok(convertToDTO(createdPost));
         } catch (IllegalArgumentException e) {
+            logger.error("Validation error creating post: {}", e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (RuntimeException e) {
-            logger.error("Error creating post: {}", e.getMessage());
+            logger.error("Error creating post: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body("Failed to create post: " + e.getMessage());
         } catch (Exception e) {
-            logger.error("Unexpected error creating post: {}", e.getMessage());
-            return ResponseEntity.status(500).body("An unexpected error occurred");
+            logger.error("Unexpected error creating post: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body("An unexpected error occurred: " + e.getMessage());
         }
     }
 
@@ -164,23 +239,7 @@ public class PostController {
         return ResponseEntity.ok(convertToDTO(postService.updatePostStatus(id, status)));
     }
 
-    @PostMapping("/{id}/like")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> likePost(
-            @PathVariable Long id,
-            @RequestParam Long userId) {
-        postService.likePost(id, userId);
-        return ResponseEntity.ok().build();
-    }
-
-    @DeleteMapping("/{id}/like")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> unlikePost(
-            @PathVariable Long id,
-            @RequestParam Long userId) {
-        postService.unlikePost(id, userId);
-        return ResponseEntity.ok().build();
-    }
+    // Like/unlike functionality moved to PostLikeController
 
     @GetMapping("/{id}/liked")
     @PreAuthorize("isAuthenticated()")
@@ -218,10 +277,21 @@ public class PostController {
         dto.setCreatedAt(post.getCreatedAt());
         dto.setUpdatedAt(post.getUpdatedAt());
         dto.setSolutionProvidedAt(post.getSolutionProvidedAt());
+
         if (post.getUser() != null) {
             dto.setAuthorName(post.getUser().getFullName());
             dto.setAuthorId(post.getUser().getId());
         }
+
+        // Handle likes
+        if (post.getLikedBy() != null) {
+            Set<UserDTO> likedByDTOs = post.getLikedBy().stream()
+                .map(UserDTO::fromUser)
+                .collect(Collectors.toSet());
+            dto.setLikedBy(likedByDTOs);
+            dto.setLikeCount(likedByDTOs.size());
+        }
+
         return dto;
     }
-} 
+}

@@ -56,7 +56,7 @@ public class PostServiceImpl implements PostService {
 
             // Set creation timestamp
             post.setCreatedAt(LocalDateTime.now());
-            
+
             // Save the post
             return postRepository.save(post);
         } catch (Exception e) {
@@ -74,12 +74,26 @@ public class PostServiceImpl implements PostService {
     @Override
     public Post updatePost(Long id, Post postDetails) {
         Post post = getPostById(id);
-        
-        post.setContent(postDetails.getContent());
-        post.setImageUrl(postDetails.getImageUrl());
-        post.setCategory(postDetails.getCategory());
-        post.setPincode(postDetails.getPincode());
-        
+
+        // Only update these fields if they are not null in the postDetails
+        if (postDetails.getContent() != null) {
+            post.setContent(postDetails.getContent());
+        }
+        if (postDetails.getImageUrl() != null) {
+            post.setImageUrl(postDetails.getImageUrl());
+        }
+        if (postDetails.getCategory() != null) {
+            post.setCategory(postDetails.getCategory());
+        }
+        if (postDetails.getPincode() != null) {
+            post.setPincode(postDetails.getPincode());
+        }
+
+        // Preserve the likedBy set
+        if (postDetails.getLikedBy() != null && !postDetails.getLikedBy().isEmpty()) {
+            post.setLikedBy(postDetails.getLikedBy());
+        }
+
         return postRepository.save(post);
     }
 
@@ -133,7 +147,7 @@ public class PostServiceImpl implements PostService {
         Post post = getPostById(postId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         if (!post.getLikedBy().contains(user)) {
             post.getLikedBy().add(user);
             postRepository.save(post);
@@ -145,7 +159,7 @@ public class PostServiceImpl implements PostService {
         Post post = getPostById(postId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         post.getLikedBy().remove(user);
         postRepository.save(post);
     }
@@ -155,7 +169,7 @@ public class PostServiceImpl implements PostService {
         Post post = getPostById(postId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        
+
         return post.getLikedBy().contains(user);
     }
 
@@ -176,4 +190,48 @@ public class PostServiceImpl implements PostService {
             throw e;
         }
     }
-} 
+
+    @Override
+    public Page<Post> searchPosts(String searchTerm, Pageable pageable) {
+        try {
+            logger.info("Searching posts with term: {}", searchTerm);
+            // Search in post content (case-insensitive)
+            Page<Post> posts = postRepository.findByContentContainingIgnoreCase(searchTerm, pageable);
+            logger.info("Found {} posts matching search term", posts.getTotalElements());
+            return posts;
+        } catch (Exception e) {
+            logger.error("Error searching posts with term: {}", searchTerm, e);
+            throw e;
+        }
+    }
+
+    @Override
+    public Page<Post> getPopularPosts(Pageable pageable) {
+        try {
+            logger.info("Fetching popular posts");
+            // For now, we'll define popular as posts with most likes
+            // This would need to be implemented in the repository
+            // For simplicity, we'll just return all posts for now
+            Page<Post> posts = postRepository.findAll(pageable);
+            logger.info("Found {} popular posts", posts.getTotalElements());
+            return posts;
+        } catch (Exception e) {
+            logger.error("Error fetching popular posts", e);
+            throw e;
+        }
+    }
+
+    @Override
+    public Page<Post> getRecentPosts(Pageable pageable) {
+        try {
+            logger.info("Fetching recent posts");
+            // Find posts ordered by creation date (newest first)
+            Page<Post> posts = postRepository.findAllByOrderByCreatedAtDesc(pageable);
+            logger.info("Found {} recent posts", posts.getTotalElements());
+            return posts;
+        } catch (Exception e) {
+            logger.error("Error fetching recent posts", e);
+            throw e;
+        }
+    }
+}

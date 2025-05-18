@@ -1,60 +1,41 @@
-import { useState, useEffect, useCallback } from 'react';
-import { checkBackendHealth } from '../services/api';
-
-const HEALTH_CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutes
+import { useState, useEffect } from 'react';
+import api from '../api/axios';
 
 const useBackendHealth = () => {
-  const [isBackendUp, setIsBackendUp] = useState(false); // Start with false to ensure initial check
-  const [isChecking, setIsChecking] = useState(false);
-
-  const checkHealth = useCallback(async () => {
-    if (isChecking) return; // Prevent multiple simultaneous checks
-    
-    setIsChecking(true);
-    try {
-      const isUp = await checkBackendHealth();
-      console.log('Backend health check result:', isUp);
-      setIsBackendUp(isUp);
-    } catch (error) {
-      console.error('Backend health check failed:', error);
-      setIsBackendUp(false);
-    } finally {
-      setIsChecking(false);
-    }
-  }, [isChecking]);
+  const [isBackendUp, setIsBackendUp] = useState(true); // Assume backend is up initially
+  const [isChecking, setIsChecking] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Initial check
-    checkHealth();
-
-    // Set up periodic checks
-    const intervalId = setInterval(checkHealth, HEALTH_CHECK_INTERVAL);
-
-    // Check when the page becomes visible again
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        checkHealth();
+    const checkHealth = async () => {
+      try {
+        setIsChecking(true);
+        const response = await api.get('/actuator/health', {
+          timeout: 5000, // 5 second timeout
+          // Don't trigger the auth interceptor on failure
+          skipAuthRefresh: true
+        });
+        setIsBackendUp(response.status === 200 && response.data?.status === 'UP');
+        setError(null);
+      } catch (error) {
+        console.warn('Backend health check failed:', error.message);
+        setIsBackendUp(false);
+        setError(error.message);
+      } finally {
+        setIsChecking(false);
       }
     };
 
-    // Check when the network comes back online
-    const handleOnline = () => {
-      checkHealth();
-    };
+    // Initial check
+    checkHealth();
 
-    // Add event listeners
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('online', handleOnline);
+    // Set up interval for periodic checks
+    const interval = setInterval(checkHealth, 30000); // Check every 30 seconds
 
-    // Cleanup
-    return () => {
-      clearInterval(intervalId);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('online', handleOnline);
-    };
-  }, [checkHealth]);
+    return () => clearInterval(interval);
+  }, []);
 
-  return { isBackendUp, isChecking, checkHealth };
+  return { isBackendUp, isChecking, error };
 };
 
-export default useBackendHealth; 
+export default useBackendHealth;

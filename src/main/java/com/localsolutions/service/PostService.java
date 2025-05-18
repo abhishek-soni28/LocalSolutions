@@ -25,4 +25,7 @@ public interface PostService {
     boolean isPostLikedByUser(Long postId, Long userId);
     Page<Post> getAllPosts(Pageable pageable);
     List<Post> getAllPostsWithoutPagination();
-} 
+    Page<Post> searchPosts(String searchTerm, Pageable pageable);
+    Page<Post> getPopularPosts(Pageable pageable);
+    Page<Post> getRecentPosts(Pageable pageable);
+}

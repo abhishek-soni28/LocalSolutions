@@ -65,4 +65,4 @@ public class UserController {
             @PathVariable String pincode) {
         return ResponseEntity.ok(userService.getBusinessOwnersByCategoryAndPincode(category, pincode));
     }
-} 
+}

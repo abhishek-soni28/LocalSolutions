@@ -3,8 +3,10 @@ package com.localsolutions.dto;
 import com.localsolutions.model.PostCategory;
 import com.localsolutions.model.PostStatus;
 import com.localsolutions.model.PostType;
+import com.localsolutions.model.User;
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 public class PostDTO {
@@ -20,4 +22,6 @@ public class PostDTO {
     private LocalDateTime solutionProvidedAt;
     private String authorName;
     private Long authorId;
-} 
+    private Set<UserDTO> likedBy;
+    private int likeCount;
+}

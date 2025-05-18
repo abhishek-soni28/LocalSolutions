@@ -50,4 +50,4 @@ public class FileUploadController {
             return ResponseEntity.badRequest().body(response);
         }
     }
-} 
+}

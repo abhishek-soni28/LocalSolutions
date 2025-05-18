@@ -1,5 +1,4 @@
-import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -10,10 +9,13 @@ import {
   Box,
   CircularProgress,
   Alert,
+  InputAdornment,
+  IconButton,
 } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
-import { login } from '../store/slices/authSlice';
+import { useAuth } from '../context/AuthContext';
 
 const validationSchema = Yup.object({
   email: Yup.string()
@@ -25,16 +27,41 @@ const validationSchema = Yup.object({
 });
 
 const Login = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error } = useSelector((state) => state.auth);
+  const { login } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleClickShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const handleMouseDownPassword = (event) => {
+    event.preventDefault();
+  };
 
   const handleSubmit = async (values) => {
+    setLoading(true);
+    setError(null);
+
     try {
-      await dispatch(login(values)).unwrap();
-      navigate('/');
+      const result = await login(values.email, values.password);
+
+      if (result.success) {
+        if (result.redirectTo) {
+          navigate(result.redirectTo);
+        } else {
+          navigate('/');
+        }
+      } else {
+        setError(result.error);
+      }
     } catch (error) {
       console.error('Login failed:', error);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -72,13 +99,27 @@ const Login = () => {
                 fullWidth
                 name="password"
                 label="Password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={values.password}
                 onChange={handleChange}
                 onBlur={handleBlur}
                 error={touched.password && Boolean(errors.password)}
                 helperText={touched.password && errors.password}
                 sx={{ mb: 2 }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={handleClickShowPassword}
+                        onMouseDown={handleMouseDownPassword}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
 
               {error && (
@@ -117,4 +158,4 @@ const Login = () => {
   );
 };
 
-export default Login; 
+export default Login;

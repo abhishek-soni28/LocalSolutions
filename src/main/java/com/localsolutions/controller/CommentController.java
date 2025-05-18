@@ -1,5 +1,6 @@
 package com.localsolutions.controller;
 
+import com.localsolutions.dto.CommentDTO;
 import com.localsolutions.model.Comment;
 import com.localsolutions.service.CommentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,19 +20,22 @@ public class CommentController {
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Comment> createComment(@RequestBody Comment comment) {
-        return ResponseEntity.ok(commentService.createComment(comment));
+    public ResponseEntity<CommentDTO> createComment(@RequestBody Comment comment) {
+        Comment savedComment = commentService.saveComment(comment);
+        return ResponseEntity.ok(CommentDTO.fromComment(savedComment));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Comment> getCommentById(@PathVariable Long id) {
-        return ResponseEntity.ok(commentService.getCommentById(id));
+    public ResponseEntity<CommentDTO> getCommentById(@PathVariable Long id) {
+        Comment comment = commentService.getCommentById(id).orElseThrow(() -> new RuntimeException("Comment not found"));
+        return ResponseEntity.ok(CommentDTO.fromComment(comment));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("isAuthenticated() and @commentService.getCommentById(#id).user.id == authentication.principal.id")
-    public ResponseEntity<Comment> updateComment(@PathVariable Long id, @RequestBody Comment comment) {
-        return ResponseEntity.ok(commentService.updateComment(id, comment));
+    public ResponseEntity<CommentDTO> updateComment(@PathVariable Long id, @RequestBody Comment comment) {
+        Comment updatedComment = commentService.updateComment(id, comment);
+        return ResponseEntity.ok(CommentDTO.fromComment(updatedComment));
     }
 
     @DeleteMapping("/{id}")
@@ -42,12 +46,16 @@ public class CommentController {
     }
 
     @GetMapping("/post/{postId}")
-    public ResponseEntity<Page<Comment>> getCommentsByPostId(@PathVariable Long postId, Pageable pageable) {
-        return ResponseEntity.ok(commentService.getCommentsByPostId(postId, pageable));
+    public ResponseEntity<Page<CommentDTO>> getCommentsByPostId(@PathVariable Long postId, Pageable pageable) {
+        Page<Comment> commentPage = commentService.getCommentsByPostId(postId, pageable);
+        Page<CommentDTO> dtoPage = commentPage.map(CommentDTO::fromComment);
+        return ResponseEntity.ok(dtoPage);
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<Page<Comment>> getCommentsByUserId(@PathVariable Long userId, Pageable pageable) {
-        return ResponseEntity.ok(commentService.getCommentsByUserId(userId, pageable));
+    public ResponseEntity<Page<CommentDTO>> getCommentsByUserId(@PathVariable Long userId, Pageable pageable) {
+        Page<Comment> commentPage = commentService.getCommentsByUserId(userId, pageable);
+        Page<CommentDTO> dtoPage = commentPage.map(CommentDTO::fromComment);
+        return ResponseEntity.ok(dtoPage);
     }
-} 
+}

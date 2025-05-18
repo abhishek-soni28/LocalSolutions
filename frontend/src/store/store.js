@@ -1,22 +1,26 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
-import postReducer from './slices/postSlice';
 import userReducer from './slices/userSlice';
+import postReducer from './slices/postSlice';
 import searchReducer from './slices/searchSlice';
 import analyticsReducer from './slices/analyticsSlice';
 import followReducer from './slices/followSlice';
 import notificationReducer from './slices/notificationSlice';
 
-const store = configureStore({
+export const store = configureStore({
   reducer: {
     auth: authReducer,
-    posts: postReducer,
-    users: userReducer,
+    user: userReducer,
+    post: postReducer,
     search: searchReducer,
     analytics: analyticsReducer,
     follow: followReducer,
     notifications: notificationReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false,
+    }),
 });
 
 export default store; 

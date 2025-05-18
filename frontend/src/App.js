@@ -1,55 +1,88 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Provider } from 'react-redux';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import store from './store';
+import { ThemeProvider, CssBaseline } from '@mui/material';
 import theme from './theme';
-import Layout from './components/layout/Layout';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Profile from './pages/Profile';
-import Search from './pages/Search';
-import BusinessDashboard from './pages/BusinessDashboard';
-import PrivateRoute from './components/auth/PrivateRoute';
-import CreatePost from './pages/CreatePost';
+import ErrorBoundary from './components/ErrorBoundary';
+import ProtectedRoute from './components/ProtectedRoute';
+import MainLayout from './components/layout/MainLayout';
+import Loading from './components/Loading';
+import { AuthProvider } from './context/AuthContext';
 
-const App = () => {
+// Lazy load components
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const CreatePost = lazy(() => import('./pages/CreatePost'));
+const PostDetails = lazy(() => import('./pages/PostDetails'));
+const Profile = lazy(() => import('./pages/Profile'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Messages = lazy(() => import('./pages/Messages'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const Search = lazy(() => import('./pages/Search'));
+const Map = lazy(() => import('./pages/Map'));
+const About = lazy(() => import('./pages/About'));
+const Contact = lazy(() => import('./pages/Contact'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const Terms = lazy(() => import('./pages/Terms'));
+
+function App() {
   return (
-    <Provider store={store}>
+    <AuthProvider>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Router>
-          <Layout>
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <PrivateRoute>
-                    <Home />
-                  </PrivateRoute>
-                }
-              />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/profile/:userId" element={<Profile />} />
-              <Route path="/business-dashboard" element={<BusinessDashboard />} />
-              <Route
-                path="/create-post"
-                element={
-                  <PrivateRoute>
-                    <CreatePost />
-                  </PrivateRoute>
-                }
-              />
-            </Routes>
-          </Layout>
-        </Router>
+        <ErrorBoundary>
+          <Router>
+            <Suspense fallback={<Loading />}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route
+                  path="/create-post"
+                  element={
+                    <ProtectedRoute>
+                      <MainLayout>
+                        <CreatePost />
+                      </MainLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/post/:id" element={<MainLayout><PostDetails /></MainLayout>} />
+                <Route path="/profile/:id" element={
+                  <ProtectedRoute>
+                    <MainLayout><Profile /></MainLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/settings" element={
+                  <ProtectedRoute>
+                    <MainLayout><Settings /></MainLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/messages" element={
+                  <ProtectedRoute>
+                    <MainLayout><Messages /></MainLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/notifications" element={
+                  <ProtectedRoute>
+                    <MainLayout><Notifications /></MainLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/search" element={<MainLayout><Search /></MainLayout>} />
+                <Route path="/map" element={<MainLayout><Map /></MainLayout>} />
+                <Route path="/about" element={<MainLayout><About /></MainLayout>} />
+                <Route path="/contact" element={<MainLayout><Contact /></MainLayout>} />
+                <Route path="/privacy" element={<MainLayout><Privacy /></MainLayout>} />
+                <Route path="/terms" element={<MainLayout><Terms /></MainLayout>} />
+                <Route path="*" element={<MainLayout><NotFound /></MainLayout>} />
+              </Routes>
+            </Suspense>
+          </Router>
+        </ErrorBoundary>
       </ThemeProvider>
-    </Provider>
+    </AuthProvider>
   );
-};
+}
 
-export default App; 
+export default App;

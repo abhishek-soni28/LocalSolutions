@@ -1,14 +1,12 @@
 package com.localsolutions.model;
 
 public enum PostCategory {
+    GENERAL,
+    PLUMBING,
+    ELECTRICAL,
+    CARPENTRY,
+    CLEANING,
     FOOD,
     GROCERY,
-    HEALTHCARE,
-    EDUCATION,
-    TRANSPORTATION,
-    ELECTRONICS,
-    FASHION,
-    HOME_SERVICES,
-    AUTOMOTIVE,
     OTHER
-} 
+}

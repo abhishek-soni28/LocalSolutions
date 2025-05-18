@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { createPost } from '../store/slices/postSlice';
-import { logout } from '../store/slices/authSlice';
-import { uploadImage } from '../services/fileUploadService';
+import { useAuth } from '../context/AuthContext';
+import { useApi } from '../hooks/useApi';
+import api from '../api/axios';
 import * as Yup from 'yup';
 import {
   Container,
@@ -34,15 +33,13 @@ const validationSchema = Yup.object({
 });
 
 const categories = [
+  { value: 'GENERAL', label: 'General' },
+  { value: 'PLUMBING', label: 'Plumbing' },
+  { value: 'ELECTRICAL', label: 'Electrical' },
+  { value: 'CARPENTRY', label: 'Carpentry' },
+  { value: 'CLEANING', label: 'Cleaning' },
   { value: 'FOOD', label: 'Food' },
   { value: 'GROCERY', label: 'Grocery' },
-  { value: 'HEALTHCARE', label: 'Healthcare' },
-  { value: 'EDUCATION', label: 'Education' },
-  { value: 'TRANSPORTATION', label: 'Transportation' },
-  { value: 'ELECTRONICS', label: 'Electronics' },
-  { value: 'FASHION', label: 'Fashion' },
-  { value: 'HOME_SERVICES', label: 'Home Services' },
-  { value: 'AUTOMOTIVE', label: 'Automotive' },
   { value: 'OTHER', label: 'Other' },
 ];
 
@@ -59,10 +56,9 @@ const postStatuses = [
 ];
 
 const CreatePost = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error } = useSelector((state) => state.posts);
-  const { isAuthenticated, token } = useSelector((state) => state.auth);
+  const { user, logout } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [uploadError, setUploadError] = useState(null);
@@ -70,11 +66,11 @@ const CreatePost = () => {
 
   // Check authentication on component mount
   useEffect(() => {
-    if (!isAuthenticated || !token) {
+    if (!user) {
       setSubmitError('Please log in to create a post');
       navigate('/login');
     }
-  }, [isAuthenticated, token, navigate]);
+  }, [user, navigate]);
 
   const handleImageChange = (event) => {
     const file = event.target.files[0];
@@ -97,17 +93,29 @@ const CreatePost = () => {
 
   const handleSubmit = async (values, { setSubmitting, setFieldError }) => {
     try {
+      setLoading(true);
       setSubmitError(null);
 
       // Upload image if provided
       let imageUrl = null;
       if (imageFile) {
         try {
-          const response = await uploadImage(imageFile);
-          imageUrl = response.data.fileUrl;
+          // Create a FormData object to upload the image
+          const formData = new FormData();
+          formData.append('file', imageFile);
+
+          // Upload the image
+          const response = await api.post('/files/upload', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+
+          imageUrl = response.data.url;
         } catch (error) {
           setUploadError('Failed to upload image. Please try again.');
           setSubmitting(false);
+          setLoading(false);
           return;
         }
       }
@@ -123,14 +131,18 @@ const CreatePost = () => {
       };
 
       // Create post
-      const result = await dispatch(createPost(postData)).unwrap();
+      const response = await api.post('/posts', postData);
       navigate('/');
     } catch (error) {
       console.error('Error creating post:', error);
-      if (error.status === 401) {
+      if (error.response?.status === 401) {
         setSubmitError('Your session has expired. Please log in again.');
-        dispatch(logout());
+        logout();
         navigate('/login');
+      } else if (error.response?.data?.error) {
+        setSubmitError(error.response.data.error);
+      } else if (error.response?.data?.message) {
+        setSubmitError(error.response.data.message);
       } else if (error.response?.data) {
         setSubmitError(error.response.data);
       } else if (error.validationErrors) {
@@ -142,6 +154,7 @@ const CreatePost = () => {
       }
     } finally {
       setSubmitting(false);
+      setLoading(false);
     }
   };
 

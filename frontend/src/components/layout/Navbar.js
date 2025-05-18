@@ -1,5 +1,4 @@
 import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
   AppBar,
@@ -12,16 +11,24 @@ import {
   MenuItem,
   Avatar,
   Alert,
+  Divider,
+  ListItemIcon,
+  ListItemText,
+  Tooltip,
 } from '@mui/material';
-import { Menu as MenuIcon } from '@mui/icons-material';
-import { logout } from '../../store/slices/authSlice';
-import useBackendHealth from '../../hooks/useBackendHealth';
+import {
+  Menu as MenuIcon,
+  Person as PersonIcon,
+  Settings as SettingsIcon,
+  ExitToApp as LogoutIcon,
+  Notifications as NotificationsIcon,
+  Add as AddIcon,
+} from '@mui/icons-material';
+import { useAuth } from '../../context/AuthContext';
 
 const Navbar = ({ onMenuClick }) => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const userState = useSelector((state) => state.user);
-  const { isBackendUp, isChecking } = useBackendHealth();
+  const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = React.useState(null);
 
   const handleMenu = (event) => {
@@ -32,34 +39,20 @@ const Navbar = ({ onMenuClick }) => {
     setAnchorEl(null);
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
+    handleClose();
   };
 
   const handleProfile = () => {
-    navigate('/profile');
+    navigate('/profile/me');
     handleClose();
   };
 
   return (
     <>
-      {!isChecking && !isBackendUp && (
-        <Alert 
-          severity="error" 
-          sx={{ 
-            position: 'fixed', 
-            top: 0, 
-            left: 0, 
-            right: 0, 
-            zIndex: 9999,
-            borderRadius: 0,
-          }}
-        >
-          Backend service is not running. Please start the backend server.
-        </Alert>
-      )}
-      <AppBar position="fixed" sx={{ top: (!isChecking && !isBackendUp) ? 56 : 0 }}>
+      <AppBar position="fixed">
         <Toolbar>
           <IconButton
             color="inherit"
@@ -77,23 +70,92 @@ const Navbar = ({ onMenuClick }) => {
           >
             Local Solutions
           </Typography>
-          {userState?.isAuthenticated ? (
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <IconButton
-                onClick={handleMenu}
-                color="inherit"
-              >
-                <Avatar sx={{ width: 32, height: 32 }}>
-                  {userState.user?.fullName?.charAt(0)}
-                </Avatar>
-              </IconButton>
+          {user ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Tooltip title="Create Post">
+                <IconButton
+                  color="inherit"
+                  onClick={() => navigate('/create-post')}
+                  size="small"
+                >
+                  <AddIcon />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title="Notifications">
+                <IconButton
+                  color="inherit"
+                  onClick={() => navigate('/notifications')}
+                  size="small"
+                >
+                  <NotificationsIcon />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title={user.fullName || user.username}>
+                <IconButton
+                  onClick={handleMenu}
+                  color="inherit"
+                  sx={{ ml: 1 }}
+                >
+                  <Avatar
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      bgcolor: 'primary.main',
+                      color: 'white',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {user?.fullName?.charAt(0) || user?.username?.charAt(0)}
+                  </Avatar>
+                </IconButton>
+              </Tooltip>
+
               <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
                 onClose={handleClose}
+                PaperProps={{
+                  elevation: 3,
+                  sx: { minWidth: 200, mt: 1 }
+                }}
               >
-                <MenuItem onClick={handleProfile}>Profile</MenuItem>
-                <MenuItem onClick={handleLogout}>Logout</MenuItem>
+                <Box sx={{ px: 2, py: 1 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                    {user.fullName || user.username}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {user.email}
+                  </Typography>
+                </Box>
+
+                <Divider />
+
+                <MenuItem onClick={handleProfile}>
+                  <ListItemIcon>
+                    <PersonIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Profile</ListItemText>
+                </MenuItem>
+
+                <MenuItem onClick={() => { navigate('/settings'); handleClose(); }}>
+                  <ListItemIcon>
+                    <SettingsIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Settings</ListItemText>
+                </MenuItem>
+
+                <Divider />
+
+                <MenuItem onClick={handleLogout}>
+                  <ListItemIcon>
+                    <LogoutIcon fontSize="small" color="error" />
+                  </ListItemIcon>
+                  <ListItemText primaryTypographyProps={{ color: 'error' }}>
+                    Logout
+                  </ListItemText>
+                </MenuItem>
               </Menu>
             </Box>
           ) : (
@@ -112,4 +174,4 @@ const Navbar = ({ onMenuClick }) => {
   );
 };
 
-export default Navbar; 
+export default Navbar;

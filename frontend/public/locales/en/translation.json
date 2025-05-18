@@ -1,0 +1,39 @@
+{
+  "article": {
+    "purpose": {
+      "title": "Article Purpose",
+      "content": "This article aims to introduce deep learning-based text classification and sentiment analysis technologies, including technical principles, implementation steps, application examples, and optimization improvements. By reading this article, readers can understand the application of deep learning in text classification and sentiment analysis, master related technologies, and provide reference for practical projects."
+    },
+    "targetAudience": {
+      "title": "Target Audience",
+      "content": "This article is mainly aimed at readers with basic programming knowledge, including software engineers, data scientists, and researchers. Readers who need to understand the basic principles of deep learning can learn through related tutorials."
+    }
+  },
+  "technicalPrinciples": {
+    "title": "Technical Principles and Concepts",
+    "basicConcepts": {
+      "title": "Basic Concept Explanation",
+      "content": "Text classification and sentiment analysis are two important tasks in the field of Natural Language Processing (NLP). Text classification refers to categorizing text according to predefined categories, while sentiment analysis refers to judging the emotional tendency of text, such as positive, negative, or neutral."
+    },
+    "technicalPrinciples": {
+      "title": "Technical Principles Introduction",
+      "subtitle": "Algorithm Principles, Operation Steps, Mathematical Formulas",
+      "textClassification": {
+        "title": "Text Classification",
+        "content": "Text classification mainly uses machine learning algorithms, including Naive Bayes, Support Vector Machines, and Neural Networks. Among these, Neural Networks perform particularly well in text classification, especially Recurrent Neural Networks (RNN) and Convolutional Neural Networks (CNN)."
+      },
+      "sentimentAnalysis": {
+        "title": "Sentiment Analysis",
+        "content": "Sentiment analysis mainly uses machine learning algorithms, including Naive Bayes, Support Vector Machines, and Neural Networks. Among these, Neural Networks perform particularly well in sentiment analysis, especially Recurrent Neural Networks (RNN) and Convolutional Neural Networks (CNN)."
+      },
+      "deepLearningModels": {
+        "title": "Deep Learning Models",
+        "content": "Deep learning models include Multi-Layer Perceptron (MLP), Recurrent Neural Networks (RNN), and Convolutional Neural Networks (CNN). These models have achieved excellent results in text classification and sentiment analysis."
+      }
+    },
+    "technicalComparison": {
+      "title": "Related Technology Comparison",
+      "content": "Deep learning models have the following advantages in text classification and sentiment analysis:"
+    }
+  }
+} 
